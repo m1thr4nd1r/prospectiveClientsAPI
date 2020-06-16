@@ -42,8 +42,8 @@ namespace prospectiveClientsAPI.Controllers
             }
         }
 
-        [HttpGet("topclients/{topClients:int}")]
-        public IActionResult Get(int topClients)
+        [HttpGet("[action]/{topClients:int}")]
+        public IActionResult TopClients(int topClients)
         {
             try
             {
@@ -52,6 +52,23 @@ namespace prospectiveClientsAPI.Controllers
             catch (ArgumentNullException ex)
             {
                 _logger.LogError("Error obtaining top clients.", ex);
+                return StatusCode(500);
+            }
+        }
+
+        [HttpGet("[action]/{id:int}")]
+        public IActionResult ClientPosition(int id)
+        {
+            try
+            {
+                int index = prospectiveClients.FindIndex(_ => _.Id == id);
+                string response = $"Position: {index + 1}";
+
+                return Ok(value: JsonConvert.SerializeObject(response, Formatting.Indented));
+            }
+            catch (ArgumentNullException ex)
+            {
+                _logger.LogError("Error obtaining client.", ex);
                 return StatusCode(500);
             }
         }
