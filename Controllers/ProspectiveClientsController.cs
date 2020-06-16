@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -26,21 +29,29 @@ namespace prospectiveClientsAPI.Controllers
         {
             if (_prospectiveClients == null)
                 _prospectiveClients = new List<Person>();
-            
+
             _logger = logger;
         }
 
-        [HttpPost("loadData")]
-        public IActionResult Post([FromBody] object value)
+        [HttpPost("[action]")]
+        public IActionResult LoadData([FromForm] IFormCollection values)
         {
+            var file = HttpContext.Request.Form.Files?[0];
+
+            byte[] bytes = new byte[file.Length];
+            var stream = file.OpenReadStream();
+            stream.Read(bytes, 0, bytes.Length);
+            var json = Encoding.UTF8.GetString(bytes);
+
             try
             {
-                _prospectiveClients = JsonConvert.DeserializeObject<List<Person>>(value.ToString());
+                _prospectiveClients = JsonConvert.DeserializeObject<List<Person>>(json);
                 return Ok();
             }
-            catch (JsonException ex)
+            catch (JsonReaderException ex)
             {
-                _logger.LogError("Error deserializing persons' JSON.", ex);
+                _logger.LogWarning("Invalid input format.", ex.StackTrace);
+                //var jObj = JObject.Parse(JsonConvert.SerializeObject("Formato de entrada invalida."));
                 return StatusCode(400);
             }
         }
@@ -92,9 +103,9 @@ namespace prospectiveClientsAPI.Controllers
         }
 
         [HttpGet]
-        public IEnumerable<Person> Get()
+        public IActionResult Get()
         {
-            return _prospectiveClients?.ToArray();
+            return Ok(_prospectiveClients?.ToArray());
         }
     }
 }
