@@ -1,9 +1,11 @@
+using Newtonsoft.Json;
 using System;
 
 namespace prospectiveClientsAPI.Models
 {
     public class Person
     {
+        [JsonProperty("PersonId")]
         public int Id { get; set; }
 
         public string FirstName { get; set; }
@@ -16,8 +18,12 @@ namespace prospectiveClientsAPI.Models
 
         public string Industry { get; set; }
 
+        [JsonProperty("NumberOfRecommendations")]
         public int NumberOfRecommendations { get; set; }
 
+        [JsonProperty("NumberOfConnections")]
         public int NumberOfConnections { get; set; }
-}
+
+        public int Priority => NumberOfConnections * NumberOfRecommendations;
+    }
 }
