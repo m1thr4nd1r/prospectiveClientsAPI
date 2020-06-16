@@ -2,8 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using prospectiveClientsAPI.Models;
 
 namespace prospectiveClientsAPI.Controllers
@@ -26,6 +29,24 @@ namespace prospectiveClientsAPI.Controllers
         public IEnumerable<Person> Get()
         {
             return prospectiveClients?.ToArray();
+        }
+
+        [HttpPost]
+        public string Post([FromForm] string people)
+        {
+            JObject data = null;
+
+            try
+            {
+                data = JObject.Parse(people.ToString());
+                return data.ToString();
+            }
+            catch (JsonReaderException ex)
+            {
+                Console.WriteLine(ex.StackTrace);
+                var jObj = JObject.Parse(JsonConvert.SerializeObject("Formato de entrada invalida."));
+                return jObj.ToString(Formatting.Indented);
+            }
         }
     }
 }
