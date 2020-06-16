@@ -1,15 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -34,7 +29,7 @@ namespace prospectiveClientsAPI.Controllers
         }
 
         [HttpPost("[action]")]
-        public IActionResult LoadData([FromForm] IFormCollection values)
+        public IActionResult LoadData([FromForm] IFormCollection _)
         {
             var file = HttpContext.Request.Form.Files?[0];
 
@@ -51,8 +46,7 @@ namespace prospectiveClientsAPI.Controllers
             catch (JsonReaderException ex)
             {
                 _logger.LogWarning("Invalid input format.", ex.StackTrace);
-                //var jObj = JObject.Parse(JsonConvert.SerializeObject("Formato de entrada invalida."));
-                return StatusCode(400);
+                return StatusCode(400, JObject.Parse(@"{ 'Response': 'Invalid JSON file provided' }").ToString());
             }
         }
 
@@ -61,12 +55,15 @@ namespace prospectiveClientsAPI.Controllers
         {
             try
             {
+                if (_prospectiveClients.Count == 0)
+                    return StatusCode(404, JObject.Parse(@"{ 'Response': 'No clients present' }").ToString());
+
                 return Ok(_prospectiveClients.OrderByDescending(_ => _.Priority).Take(topClients).ToArray());
             }
             catch (ArgumentNullException ex)
             {
                 _logger.LogError("Error obtaining top clients.", ex);
-                return StatusCode(500);
+                return StatusCode(500, JObject.Parse(@"{ 'Response': 'Invalid number of top clients provided' }").ToString());
             }
         }
 
@@ -76,14 +73,20 @@ namespace prospectiveClientsAPI.Controllers
             try
             {
                 int index = _prospectiveClients.FindIndex(_ => _.Id == id);
-                string response = $"Position: {index + 1}";
 
-                return Ok(value: JsonConvert.SerializeObject(response, Formatting.Indented));
+                if (index < 0)
+                    return StatusCode(404, JObject.Parse(@"{ 'Response': 'Client not found.' }").ToString());
+
+                string response = $@"{{
+                    'Position':'{index + 1}'
+                }}";
+
+                return Ok(value: JObject.Parse(response).ToString());
             }
             catch (ArgumentNullException ex)
             {
                 _logger.LogError("Error obtaining client.", ex);
-                return StatusCode(500);
+                return StatusCode(500, JObject.Parse(@"{ 'Response': 'Invalid JSON provided' }").ToString());
             }
         }
 
@@ -98,7 +101,7 @@ namespace prospectiveClientsAPI.Controllers
             catch (JsonException ex)
             {
                 _logger.LogError("Error deserializing person's JSON.", ex);
-                return StatusCode(400);
+                return StatusCode(400, JObject.Parse(@"{ 'Response': 'Invalid client's JSON provided' }").ToString());
             }
         }
 
