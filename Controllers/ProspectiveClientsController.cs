@@ -18,12 +18,15 @@ namespace prospectiveClientsAPI.Controllers
     [Route("[controller]")]
     public class ProspectiveClientsController : ControllerBase
     {
-        static volatile private List<Person> prospectiveClients;
+        static volatile private List<Person> _prospectiveClients;
 
         private readonly ILogger<ProspectiveClientsController> _logger;
 
         public ProspectiveClientsController(ILogger<ProspectiveClientsController> logger)
         {
+            if (_prospectiveClients == null)
+                _prospectiveClients = new List<Person>();
+            
             _logger = logger;
         }
 
@@ -32,7 +35,7 @@ namespace prospectiveClientsAPI.Controllers
         {
             try
             {
-                prospectiveClients = JsonConvert.DeserializeObject<List<Person>>(value.ToString());
+                _prospectiveClients = JsonConvert.DeserializeObject<List<Person>>(value.ToString());
                 return Ok();
             }
             catch (JsonException ex)
@@ -47,7 +50,7 @@ namespace prospectiveClientsAPI.Controllers
         {
             try
             {
-                return Ok(prospectiveClients.OrderByDescending(_ => _.Priority).Take(topClients).ToArray());
+                return Ok(_prospectiveClients.OrderByDescending(_ => _.Priority).Take(topClients).ToArray());
             }
             catch (ArgumentNullException ex)
             {
@@ -61,7 +64,7 @@ namespace prospectiveClientsAPI.Controllers
         {
             try
             {
-                int index = prospectiveClients.FindIndex(_ => _.Id == id);
+                int index = _prospectiveClients.FindIndex(_ => _.Id == id);
                 string response = $"Position: {index + 1}";
 
                 return Ok(value: JsonConvert.SerializeObject(response, Formatting.Indented));
@@ -73,10 +76,25 @@ namespace prospectiveClientsAPI.Controllers
             }
         }
 
+        [HttpPost("[action]")]
+        public IActionResult InsertPerson([FromBody] object value)
+        {
+            try
+            {
+                _prospectiveClients.Add(JsonConvert.DeserializeObject<Person>(value.ToString()));
+                return Ok();
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError("Error deserializing person's JSON.", ex);
+                return StatusCode(400);
+            }
+        }
+
         [HttpGet]
         public IEnumerable<Person> Get()
         {
-            return prospectiveClients?.ToArray();
+            return _prospectiveClients?.ToArray();
         }
     }
 }
